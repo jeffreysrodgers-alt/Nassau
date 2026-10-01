@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Nassau">
+<meta name="color-scheme" content="light only">
+<title>Nassau v. 1.0</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231a5c38'/><text y='72' x='50' text-anchor='middle' font-size='62' font-family='serif'>⛳</text></svg>">
+<style>
+:root {
+  --green:    #1a5c38;
+  --green-bg: #eaf3ee;
+  --red:      #b91c1c;
+  --red-bg:   #fef2f2;
+  --gold:     #92680a;
+  --gold-bg:  #fef9ec;
+  --muted:    #6b7280;
+  --border:   #e5e7eb;
+  --border-strong: #9ca3af;
+  --bg:       #ffffff;
+  --surface:  #f9fafb;
+  --text:     #111827;
+  --accent:   #1a5c38;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --green:    #1a5c38 !important;
+    --green-bg: #eaf3ee !important;
+    --red:      #b91c1c !important;
+    --red-bg:   #fef2f2 !important;
+    --gold:     #92680a !important;
+    --gold-bg:  #fef9ec !important;
+    --muted:    #6b7280 !important;
+    --border:   #e5e7eb !important;
+    --border-strong: #9ca3af !important;
+    --bg:       #ffffff !important;
+    --surface:  #f9fafb !important;
+    --text:     #111827 !important;
+    --accent:   #1a5c38 !important;
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--surface);color:var(--text);font-size:15px;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);}
+.wrap{max-width:480px;margin:0 auto;padding:12px 12px 40px;}
+h1{font-size:22px;font-weight:800;color:var(--accent);letter-spacing:-0.5px;}
+.sub{font-size:12px;color:var(--muted);margin-bottom:14px;}
+.tabs{display:flex;gap:4px;margin-bottom:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px;}
+.tab{flex-shrink:0;padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg);font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;}
+.tab.on{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700;}
+.tab:disabled{opacity:0.4;cursor:default;}
+.panel{display:none;} .panel.on{display:block;}
+.card{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:13px;margin-bottom:10px;}
+.lbl{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px;}
+input,select{width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-size:14px;background:var(--bg);color:var(--text);}
+input:focus,select:focus{outline:2px solid var(--accent);border-color:var(--accent);}
+button{border:1px solid var(--border);border-radius:7px;padding:9px 14px;font-size:14px;background:var(--bg);color:var(--text);cursor:pointer;font-family:inherit;}
+button:active{opacity:.8;}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700;width:100%;padding:12px;}
+.btn-sm{padding:5px 10px;font-size:12px;border-radius:6px;}
+.btn-selected{background:var(--accent)!important;color:#fff!important;border-color:var(--accent)!important;font-weight:700!important;}
+.row{display:flex;gap:8px;}
+.row>div{flex:1;}
+.muted{color:var(--muted);font-size:13px;}
+.pos{color:var(--green);font-weight:700;}
+.neg{color:var(--red);font-weight:700;}
+/* Score entry */
+.score-grid{display:grid;gap:6px;}
+.score-row{display:grid;grid-template-columns:1fr 60px 60px;gap:6px;align-items:center;}
+.score-row input{text-align:center;padding:8px 4px;font-size:16px;font-weight:700;}
+.hole-hdr{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;display:grid;grid-template-columns:1fr 60px 60px;gap:6px;padding:0 2px;margin-bottom:4px;}
+/* Nassau pair cards */
+.pair-card{background:var(--bg);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;}
+.pair-hdr{padding:10px 13px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);background:var(--surface);}
+.pair-name{font-size:14px;font-weight:700;}
+.pair-result{font-size:13px;font-weight:700;}
+.bet-row{display:flex;align-items:center;gap:6px;padding:7px 13px;border-bottom:1px solid var(--border);}
+.bet-row:last-child{border-bottom:none;}
+.bet-label{font-size:12px;font-weight:700;min-width:58px;color:var(--text);}
+.bet-status{flex:1;font-size:11px;color:var(--muted);}
+.bet-result{font-size:12px;font-weight:700;min-width:44px;text-align:right;}
+.press-row{background:#f9f8f5;}
+/* Summary totals */
+.totals-grid{display:grid;gap:7px;}
+.total-card{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;}
+.total-name{font-size:14px;font-weight:600;}
+.total-amt{font-size:18px;font-weight:800;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Nassau</h1>
+  <p class="sub">Whidbey Golf Club — v. 1.0</p>
+
+  <div class="tabs">
+    <button class="tab on"  data-tab="setup">Setup</button>
+    <button class="tab" data-tab="scores" disabled>Scores</button>
+    <button class="tab" data-tab="nassau" disabled>Nassau</button>
+    <button class="tab" data-tab="summary" disabled>Summary</button>
+  </div>
+
+  <!-- SETUP -->
+  <div class="panel on" id="panel-setup">
+    <div class="card">
+      <p style="font-size:14px;font-weight:700;margin-bottom:10px;">Players</p>
+      <div id="player-inputs"></div>
+      <div class="row" style="margin-top:8px;">
+        <button id="add-p" class="btn-sm">+ Add player</button>
+        <button id="rm-p"  class="btn-sm">− Remove</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <div>
+          <label class="lbl">Holes</label>
+          <select id="hole-count">
+            <option value="9">9</option>
+            <option value="18" selected>18</option>
+          </select>
+        </div>
+        <div>
+          <label class="lbl">$ per bet</label>
+          <input type="number" id="bet-val" value="5" min="0.25" step="0.25" style="width:100%;">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p style="font-size:14px;font-weight:600;cursor:pointer;margin:0;display:flex;justify-content:space-between;" id="si-toggle">
+        <span>Whidbey Golf Club</span>
+        <span style="font-size:12px;font-weight:400;color:var(--muted);">Stroke index &amp; par ▸</span>
+      </p>
+      <div id="si-body" style="display:none;margin-top:10px;">
+        <div id="si-front" style="margin-bottom:8px;"></div>
+        <div id="si-back"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p style="font-size:14px;font-weight:600;cursor:pointer;margin:0;display:flex;justify-content:space-between;" id="nassau-setup-toggle">
+        <span>Nassau matches</span>
+        <span style="font-size:12px;font-weight:400;color:var(--muted);">Set up ▸</span>
+      </p>
+      <div id="nassau-setup-body" style="display:none;margin-top:10px;">
+        <p class="muted" style="margin-bottom:8px;">Enter player names first, then toggle matches on.</p>
+        <div id="nassau-setup-pairs"></div>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="start-btn">Start round</button>
+  </div>
+
+  <!-- SCORES -->
+  <div class="panel" id="panel-scores">
+    <div id="scores-wrap"></div>
+  </div>
+
+  <!-- NASSAU -->
+  <div class="panel" id="panel-nassau">
+    <div id="nassau-wrap"></div>
+  </div>
+
+  <!-- SUMMARY -->
+  <div class="panel" id="panel-summary">
+    <div id="summary-wrap"></div>
+  </div>
+</div>
+
+<script>
+// ─── COURSE DATA ──────────────────────────────────────────────────────────────
+const SI  = [5,15,7,13,3,1,17,9,11,2,14,6,18,4,12,10,16,8];
+const PAR = [5,3,4,4,4,5,3,4,4,4,4,5,3,4,4,4,3,5];
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let S = {
+  players: [{name:'',hcp:0},{name:'',hcp:0},{name:'',hcp:0},{name:'',hcp:0}],
+  si: SI.slice(), par: PAR.slice(),
+  holes: 18, betVal: 5,
+  started: false,
+  scores: {},   // scores[hole][playerIdx] = gross (number or 'X')
+  nassau: {},   // nassau[key] = {active, val, presses:{Front:[],Back:[],Total:[]}}
+  _savedAt: null,
+};
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+const np = ()=>S.players.length;
+const ns = ()=>S.players.map(p=>p.name||'P'+(S.players.indexOf(p)+1));
+
+function compareNets(a,b){
+  // lower net wins; X loses to any number
+  if(a.x&&b.x) return 0;
+  if(a.x) return -1;
+  if(b.x) return 1;
+  if(a.val<b.val) return 1;
+  if(a.val>b.val) return -1;
+  return 0;
+}
+
+function grossNet(playerIdx, hole){
+  const g = S.scores[hole]?S.scores[hole][playerIdx]:undefined;
+  if(g===undefined||g===null||g==='') return null;
+  const isX = g==='X';
+  // Daily HCP: player HCP minus min HCP in group
+  const hcps = S.players.map(p=>+(p.hcp)||0);
+  const minHcp = Math.min(...hcps);
+  const dailyHcp = (+(S.players[playerIdx].hcp)||0) - minHcp;
+  const si = S.si[hole-1];
+  const strokes = dailyHcp>=si ? 1 : 0;
+  const gross = isX ? S.par[hole-1]+2 : +g;
+  return { val: gross - strokes, x: isX };
+}
+
+// ─── TABS ─────────────────────────────────────────────────────────────────────
+function go(tab){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on',p.id==='panel-'+tab));
+  if(tab==='scores')  renderScores();
+  if(tab==='nassau')  renderNassau();
+  if(tab==='summary') renderSummary();
+}
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{ if(!b.disabled) go(b.dataset.tab); });
+
+// ─── SETUP ───────────────────────────────────────────────────────────────────
+function renderPInputs(){
+  const wrap = document.getElementById('player-inputs');
+  wrap.innerHTML = '';
+  S.players.forEach((p,i)=>{
+    const row = document.createElement('div');
+    row.className = 'row'; row.style.marginBottom = '6px';
+    const numSpan = document.createElement('span');
+    numSpan.style.cssText = 'font-size:13px;font-weight:700;color:var(--muted);padding:8px 4px 0 0;min-width:18px;';
+    numSpan.textContent = (i+1)+'.';
+    const nameInp = document.createElement('input');
+    nameInp.placeholder = 'Player '+(i+1)+' name';
+    nameInp.value = p.name||'';
+    nameInp.oninput = e=>{ S.players[i].name=e.target.value; if(document.getElementById('nassau-setup-body').style.display!=='none') renderNassauSetup(); };
+    const hcpWrap = document.createElement('div'); hcpWrap.style.flex='0 0 70px';
+    const hcpInp = document.createElement('input');
+    hcpInp.type='number'; hcpInp.min='0'; hcpInp.max='36'; hcpInp.step='1';
+    hcpInp.placeholder='HCP'; hcpInp.value=p.hcp||'';
+    hcpInp.style.cssText='width:70px;text-align:center;';
+    hcpInp.oninput = e=>{ S.players[i].hcp=+e.target.value||0; };
+    hcpWrap.appendChild(hcpInp);
+    row.appendChild(numSpan); row.appendChild(nameInp); row.appendChild(hcpWrap);
+    wrap.appendChild(row);
+  });
+}
+
+document.getElementById('add-p').onclick=()=>{ S.players.push({name:'',hcp:0}); renderPInputs(); };
+document.getElementById('rm-p').onclick=()=>{ if(np()>2){ S.players.pop(); renderPInputs(); } };
+
+// SI grid
+function renderSiGrid(){
+  ['si-front','si-back'].forEach((id,half)=>{
+    const wrap=document.getElementById(id); wrap.innerHTML='';
+    const table=document.createElement('table');
+    table.style.cssText='width:100%;border-collapse:collapse;font-size:11px;';
+    const rows=[
+      {label:'H',  vals:Array.from({length:9},(_,i)=>half*9+i+1), bold:true, color:'var(--muted)'},
+      {label:'SI', vals:Array.from({length:9},(_,i)=>S.si[half*9+i]), bold:false, color:'var(--text)'},
+    ];
+    rows.forEach(({label,vals,bold,color})=>{
+      const tr=document.createElement('tr');
+      const th=document.createElement('td');
+      th.style.cssText='font-size:10px;font-weight:700;color:var(--muted);padding:3px 6px 3px 0;white-space:nowrap;';
+      th.textContent=label;
+      tr.appendChild(th);
+      vals.forEach(v=>{
+        const td=document.createElement('td');
+        td.style.cssText='text-align:center;padding:3px 2px;border:1px solid var(--border);border-radius:3px;font-weight:'+(bold?'700':'400')+';color:'+color+';';
+        td.textContent=v;
+        tr.appendChild(td);
+      });
+      table.appendChild(tr);
+    });
+    wrap.appendChild(table);
+  });
+}
+renderSiGrid();
+renderPInputs();
+
+document.getElementById('si-toggle').onclick=()=>{
+  const body=document.getElementById('si-body');
+  const lbl=document.querySelector('#si-toggle span:last-child');
+  const open=body.style.display!=='none';
+  body.style.display=open?'none':'block';
+  lbl.textContent='Stroke index & par '+(open?'▸':'▴');
+};
+
+// Nassau setup
+document.getElementById('nassau-setup-toggle').onclick=()=>{
+  const body=document.getElementById('nassau-setup-body');
+  const lbl=document.querySelector('#nassau-setup-toggle span:last-child');
+  const open=body.style.display!=='none';
+  body.style.display=open?'none':'block';
+  lbl.textContent='Set up '+(open?'▸':'▴');
+  if(!open) renderNassauSetup();
+};
+
+function renderNassauSetup(){
+  if(!S.nassau) S.nassau={};
+  const nms=ns(), wrap=document.getElementById('nassau-setup-pairs');
+  const pairs=[];
+  for(let a=0;a<np();a++) for(let b=a+1;b<np();b++) pairs.push([a,b]);
+  pairs.forEach(([a,b])=>{ const key=a+'-'+b; if(!S.nassau[key]) S.nassau[key]={active:false,val:+(document.getElementById('bet-val').value)||5,presses:{}}; });
+
+  // Track open state
+  const openSections={};
+  nms.forEach((_,pi)=>{ const body=document.getElementById('nsp-'+pi); if(body) openSections[pi]=body.style.display!=='none'; });
+
+  wrap.innerHTML='';
+  if(!pairs.length){ wrap.innerHTML='<p class="muted">Enter player names above first.</p>'; return; }
+
+  nms.forEach((nm,pi)=>{
+    const isOpen=pi in openSections?openSections[pi]:false;
+    const card=document.createElement('div');
+    card.style.cssText='border:1px solid var(--border);border-radius:8px;margin-bottom:7px;overflow:hidden;';
+    const hdr=document.createElement('div');
+    hdr.style.cssText='padding:9px 12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:var(--surface);';
+    const ac=pairs.filter(([a,b])=>(a===pi||b===pi)&&S.nassau[a+'-'+b].active).length;
+    hdr.innerHTML='<span style="font-size:13px;font-weight:700;">'+nm+'</span>'
+      +'<span style="font-size:11px;color:var(--muted);">'+(ac?ac+' on':'')+' '+(isOpen?'▴':'▸')+'</span>';
+    hdr.onclick=()=>{
+      const body=document.getElementById('nsp-'+pi);
+      const open=body.style.display!=='none';
+      body.style.display=open?'none':'block';
+      const a2=pairs.filter(([a,b])=>(a===pi||b===pi)&&S.nassau[a+'-'+b].active).length;
+      hdr.querySelector('span:last-child').textContent=(a2?a2+' on':'')+' '+(open?'▸':'▴');
+    };
+    card.appendChild(hdr);
+    const body=document.createElement('div');
+    body.id='nsp-'+pi; body.style.display=isOpen?'block':'none';
+    body.style.cssText+='padding:8px 12px;border-top:1px solid var(--border);';
+    pairs.filter(([a,b])=>a===pi||b===pi).forEach(([a,b])=>{
+      const key=a+'-'+b, cfg=S.nassau[key];
+      const opp=a===pi?nms[b]:nms[a];
+      const row=document.createElement('div');
+      row.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:7px;';
+      const tog=document.createElement('button');
+      tog.textContent=cfg.active?'ON':'OFF';
+      tog.className=cfg.active?'btn-sm btn-selected':'btn-sm';
+      tog.onclick=()=>{ cfg.active=!cfg.active; autosave(); renderNassauSetup(); };
+      const oppName=document.createElement('span');
+      oppName.style.cssText='flex:1;font-size:13px;'; oppName.textContent='vs '+opp;
+      const amtWrap=document.createElement('div'); amtWrap.style.cssText='display:flex;align-items:center;gap:3px;';
+      const amtLbl=document.createElement('span'); amtLbl.style.cssText='font-size:12px;color:var(--muted);'; amtLbl.textContent='$';
+      const amtInp=document.createElement('input');
+      amtInp.type='number'; amtInp.min='0.25'; amtInp.step='0.25'; amtInp.value=cfg.val||5;
+      amtInp.style.cssText='width:55px;padding:4px 5px;font-size:13px;';
+      amtInp.oninput=e=>{ cfg.val=+e.target.value||5; autosave(); };
+      amtWrap.appendChild(amtLbl); amtWrap.appendChild(amtInp);
+      row.appendChild(tog); row.appendChild(oppName); row.appendChild(amtWrap);
+      body.appendChild(row);
+    });
+    card.appendChild(body);
+    wrap.appendChild(card);
+  });
+}
+
+document.getElementById('bet-val').oninput=e=>{ if(S.started){ S.betVal=+e.target.value||5; autosave(); } };
+
+document.getElementById('start-btn').onclick=()=>{
+  S.holes=+document.getElementById('hole-count').value;
+  S.betVal=+document.getElementById('bet-val').value||5;
+  S.started=true; S.scores={};
+  autosave();
+  ['scores','nassau','summary'].forEach(t=>document.querySelector('[data-tab="'+t+'"]').disabled=false);
+  go('scores');
+};
+
+// ─── SCORE ENTRY ─────────────────────────────────────────────────────────────
+function renderScores(){
+  const wrap=document.getElementById('scores-wrap');
+  wrap.innerHTML='';
+  const nms=ns();
+
+  for(let h=1;h<=S.holes;h++){
+    if(!S.scores[h]) S.scores[h]={};
+    const card=document.createElement('div'); card.className='card';
+    // Header
+    const hdr=document.createElement('div');
+    hdr.style.cssText='display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;';
+    hdr.innerHTML='<span style="font-size:14px;font-weight:800;">Hole '+h+'</span>'
+      +'<span style="font-size:12px;color:var(--muted);">Par '+S.par[h-1]+' · SI '+S.si[h-1]+'</span>';
+    card.appendChild(hdr);
+
+    // Column headers
+    const colHdr=document.createElement('div');
+    colHdr.className='hole-hdr';
+    colHdr.innerHTML='<span>Player</span><span style="text-align:center;">Gross</span><span style="text-align:center;">Net</span>';
+    card.appendChild(colHdr);
+
+    nms.forEach((nm,i)=>{
+      const row=document.createElement('div'); row.className='score-row';
+      const nmSpan=document.createElement('span'); nmSpan.style.cssText='font-size:13px;font-weight:600;'; nmSpan.textContent=nm;
+      const gInp=document.createElement('input');
+      gInp.type='text'; gInp.inputMode='numeric';
+      gInp.placeholder='—';
+      const saved=S.scores[h][i];
+      if(saved!==undefined&&saved!==null&&saved!=='') gInp.value=saved;
+      gInp.oninput=e=>{
+        let v=e.target.value.trim();
+        if(v==='99'||v.toLowerCase()==='x') v='X';
+        S.scores[h][i]=v===''?null:isNaN(+v)?v:+v;
+        autosave();
+        // Update net display
+        const net=grossNet(i,h);
+        netSpan.textContent=net?(net.x?'X':net.val):'—';
+        netSpan.style.color=net&&net.x?'var(--red)':'var(--muted)';
+        // Re-render Nassau live
+        if(document.getElementById('panel-nassau').classList.contains('on')) renderNassau();
+      };
+      gInp.style.color=saved==='X'?'var(--red)':'var(--text)';
+      const net=grossNet(i,h);
+      const netSpan=document.createElement('span');
+      netSpan.style.cssText='text-align:center;font-size:14px;font-weight:700;color:var(--muted);';
+      netSpan.textContent=net?(net.x?'X':net.val):'—';
+      if(net&&net.x) netSpan.style.color='var(--red)';
+      row.appendChild(nmSpan); row.appendChild(gInp); row.appendChild(netSpan);
+      card.appendChild(row);
+    });
+    wrap.appendChild(card);
+  }
+}
+
+// ─── NASSAU ──────────────────────────────────────────────────────────────────
+function matchResult(pA,pB,start,end){
+  let aUp=0,bUp=0,scored=0;
+  for(let h=start;h<=Math.min(end,S.holes);h++){
+    const nA=grossNet(pA,h), nB=grossNet(pB,h);
+    if(!nA||!nB) continue;
+    scored++;
+    const cmp=compareNets(nA,nB);
+    if(cmp>0) aUp++; else if(cmp<0) bUp++;
+  }
+  return{aUp,bUp,scored};
+}
+
+function renderNassau(){
+  const wrap=document.getElementById('nassau-wrap');
+  wrap.innerHTML='';
+  const nms=ns();
+  const pairs=[];
+  for(let a=0;a<np();a++) for(let b=a+1;b<np();b++) pairs.push([a,b]);
+  const activePairs=pairs.filter(([a,b])=>S.nassau[a+'-'+b]&&S.nassau[a+'-'+b].active);
+  const inactivePairs=pairs.filter(([a,b])=>!S.nassau[a+'-'+b]||!S.nassau[a+'-'+b].active);
+
+  if(!activePairs.length){
+    const p=document.createElement('p'); p.className='muted';
+    p.textContent='No active Nassau matches. Enable matches in Setup.';
+    wrap.appendChild(p); return;
+  }
+
+  function renderPairCard([pA,pB]){
+    const key=pA+'-'+pB;
+    if(!S.nassau[key]) S.nassau[key]={active:false,val:S.betVal,presses:{}};
+    const cfg=S.nassau[key];
+    const nassauVal=cfg.val||S.betVal;
+    if(!cfg.presses) cfg.presses={};
+
+    const card=document.createElement('div'); card.className='pair-card';
+
+    // Header
+    const hdr=document.createElement('div'); hdr.className='pair-hdr';
+    const nameEl=document.createElement('span'); nameEl.className='pair-name';
+    nameEl.innerHTML='<span style="color:var(--green)">'+nms[pA]+'</span> <span style="color:var(--muted);font-weight:400;">vs</span> <span style="color:var(--red)">'+nms[pB]+'</span>';
+    const amtEl=document.createElement('span'); amtEl.style.cssText='font-size:11px;color:var(--muted);';
+    amtEl.textContent='$'+nassauVal+' per bet';
+    hdr.appendChild(nameEl); hdr.appendChild(amtEl);
+    card.appendChild(hdr);
+
+    // Bets
+    const bets=S.holes===18
+      ?[['Front',1,9],['Back',10,18],['Total',1,18]]
+      :[['Total',1,S.holes]];
+
+    bets.forEach(([label,start,end])=>{
+      if(!cfg.presses[label]) cfg.presses[label]=[];
+      const pressList=cfg.presses[label];
+      const allBets=[{betLabel:label,start,end,isPress:false}];
+      pressList.forEach((p,pi)=>allBets.push({betLabel:'Press '+(pi+1),start:p.fromHole,end,isPress:true,pressIdx:pi}));
+
+      allBets.forEach(({betLabel,start:bStart,end:bEnd,isPress,pressIdx})=>{
+        const{aUp,bUp,scored}=matchResult(pA,pB,bStart,bEnd);
+        const totalHoles=bEnd-bStart+1;
+        const lead=aUp-bUp, rem=totalHoles-scored;
+        const over=scored>0&&(Math.abs(lead)>rem||rem===0);
+
+        let statusText, statusCls='color:var(--muted)';
+        if(scored===0){statusText='Not started';}
+        else if(lead===0){statusText='All square'+(rem&&!over?' · '+rem+' left':'');}
+        else{
+          const leaderName=lead>0?nms[pA]:nms[pB];
+          const upAmt=Math.abs(lead);
+          statusText=leaderName+' '+(over?'wins '+upAmt+'&'+rem:upAmt+' up'+(rem?' · '+rem+' left':''));
+          statusCls=lead>0?'color:var(--green);font-weight:600':'color:var(--red);font-weight:600';
+        }
+
+        let resultText='TBD', resultCls='color:var(--muted)';
+        if(over||rem===0){
+          if(lead>0){resultText='+$'+nassauVal;resultCls='color:var(--green);font-weight:700';}
+          else if(lead<0){resultText='-$'+nassauVal;resultCls='color:var(--red);font-weight:700';}
+          else{resultText='Push';}
+        }
+
+        const row=document.createElement('div');
+        row.className='bet-row'+(isPress?' press-row':'');
+
+        const lblEl=document.createElement('span'); lblEl.className='bet-label';
+        lblEl.textContent=betLabel;
+        const statusEl=document.createElement('span'); statusEl.className='bet-status';
+        statusEl.innerHTML='<span style="'+statusCls+'">'+statusText+'</span>';
+        const resultEl=document.createElement('span'); resultEl.className='bet-result';
+        resultEl.innerHTML='<span style="'+resultCls+'">'+resultText+'</span>';
+
+        row.appendChild(lblEl); row.appendChild(statusEl); row.appendChild(resultEl);
+
+        // Press button — available once section has started and holes remain
+        if(!over && rem>0 && scored>0){
+          let lastScored=bStart;
+          for(let h=bEnd;h>=bStart;h--){
+            const nA=grossNet(pA,h), nB=grossNet(pB,h);
+            if(nA&&nB){lastScored=h;break;}
+          }
+          const nextHole=lastScored+1;
+          if(nextHole<=bEnd){
+            const pb=document.createElement('button');
+            pb.textContent='Press'; pb.className='btn-sm';
+            pb.style.cssText='background:var(--gold-bg);color:var(--gold);border-color:var(--gold);font-weight:700;font-size:11px;padding:3px 8px;';
+            pb.onclick=()=>{ cfg.presses[label].push({fromHole:nextHole}); autosave(); renderNassau(); if(document.getElementById('panel-summary').classList.contains('on')) renderSummary(); };
+            row.appendChild(pb);
+          }
+        }
+
+        // Remove press button
+        if(isPress){
+          const rm=document.createElement('button');
+          rm.textContent='✕'; rm.className='btn-sm';
+          rm.style.cssText='font-size:11px;padding:2px 6px;color:var(--muted);margin-left:2px;';
+          rm.onclick=()=>{ cfg.presses[label].splice(pressIdx,1); autosave(); renderNassau(); };
+          row.appendChild(rm);
+        }
+
+        card.appendChild(row);
+      });
+    });
+    wrap.appendChild(card);
+  }
+
+  activePairs.forEach(renderPairCard);
+
+  // Inactive matches collapsed
+  if(inactivePairs.length){
+    const inactCard=document.createElement('div'); inactCard.className='card';
+    inactCard.style.cssText='background:#f5f3ee;';
+    const inactHdr=document.createElement('p');
+    inactHdr.style.cssText='font-size:13px;font-weight:600;cursor:pointer;margin:0;display:flex;justify-content:space-between;';
+    inactHdr.innerHTML='<span>Inactive matches</span><span style="font-weight:400;color:var(--muted);">▸</span>';
+    const inactBody=document.createElement('div'); inactBody.style.display='none'; inactBody.style.marginTop='8px';
+    inactivePairs.forEach(([a,b])=>{
+      const p=document.createElement('p'); p.style.cssText='font-size:13px;color:var(--muted);padding:3px 0;';
+      p.textContent=nms[a]+' vs '+nms[b]; inactBody.appendChild(p);
+    });
+    inactHdr.onclick=()=>{
+      const open=inactBody.style.display!=='none';
+      inactBody.style.display=open?'none':'block';
+      inactHdr.querySelector('span:last-child').textContent=open?'▸':'▴';
+    };
+    inactCard.appendChild(inactHdr); inactCard.appendChild(inactBody);
+    wrap.appendChild(inactCard);
+  }
+}
+
+// ─── SUMMARY ─────────────────────────────────────────────────────────────────
+function renderSummary(){
+  const wrap=document.getElementById('summary-wrap');
+  wrap.innerHTML='';
+  const nms=ns();
+  const pairs=[];
+  for(let a=0;a<np();a++) for(let b=a+1;b<np();b++) pairs.push([a,b]);
+  const activePairs=pairs.filter(([a,b])=>S.nassau[a+'-'+b]&&S.nassau[a+'-'+b].active);
+
+  // Tally totals
+  const totals=Array(np()).fill(0);
+  activePairs.forEach(([pA,pB])=>{
+    const key=pA+'-'+pB, cfg=S.nassau[key];
+    if(!cfg) return;
+    const nassauVal=cfg.val||S.betVal;
+    if(!cfg.presses) cfg.presses={};
+    const bets=S.holes===18?[['Front',1,9],['Back',10,18],['Total',1,18]]:[['Total',1,S.holes]];
+    bets.forEach(([label,start,end])=>{
+      const allBets=[{start,end}];
+      (cfg.presses[label]||[]).forEach(p=>allBets.push({start:p.fromHole,end}));
+      allBets.forEach(({start:bStart,end:bEnd})=>{
+        const{aUp,bUp,scored}=matchResult(pA,pB,bStart,bEnd);
+        const lead=aUp-bUp, rem=(bEnd-bStart+1)-scored;
+        const over=scored>0&&(Math.abs(lead)>rem||rem===0);
+        if(over||rem===0){
+          if(lead>0){totals[pA]+=nassauVal;totals[pB]-=nassauVal;}
+          else if(lead<0){totals[pA]-=nassauVal;totals[pB]+=nassauVal;}
+        }
+      });
+    });
+  });
+
+  // Totals cards
+  const sortedPlayers=[...nms.map((n,i)=>({n,i,t:totals[i]}))].sort((a,b)=>b.t-a.t);
+  const totCard=document.createElement('div'); totCard.className='card';
+  totCard.innerHTML='<p style="font-size:13px;font-weight:700;margin-bottom:10px;">Standings</p>';
+  const grid=document.createElement('div'); grid.className='totals-grid';
+  sortedPlayers.forEach(({n,t})=>{
+    const row=document.createElement('div'); row.className='total-card';
+    const nameEl=document.createElement('span'); nameEl.className='total-name'; nameEl.textContent=n;
+    const amtEl=document.createElement('span'); amtEl.className='total-amt';
+    amtEl.style.color=t>0?'var(--green)':t<0?'var(--red)':'var(--muted)';
+    amtEl.textContent=(t>=0?'+':'')+('$'+Math.abs(t).toFixed(2)).replace('.00','');
+    row.appendChild(nameEl); row.appendChild(amtEl);
+    grid.appendChild(row);
+  });
+  totCard.appendChild(grid);
+  wrap.appendChild(totCard);
+
+  // Collapsible scorecard
+  const scBtn=document.createElement('button');
+  scBtn.style.cssText='width:100%;text-align:left;padding:10px 13px;font-size:14px;font-weight:600;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;';
+  scBtn.innerHTML='📋 Scorecard <span>▸</span>';
+  const scBody=document.createElement('div'); scBody.style.display='none'; scBody.style.marginBottom='10px';
+  scBtn.onclick=()=>{
+    const open=scBody.style.display!=='none';
+    scBody.style.display=open?'none':'block';
+    scBtn.querySelector('span').textContent=open?'▸':'▴';
+    if(!open) renderScorecardInto(scBody);
+  };
+  wrap.appendChild(scBtn); wrap.appendChild(scBody);
+}
+
+function renderScorecardInto(container){
+  const nms=ns();
+  const card=document.createElement('div'); card.className='card';
+  let html='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;">';
+  html+='<tr style="border-bottom:2px solid var(--border-strong);">'
+    +'<th style="padding:3px 4px;text-align:left;font-size:10px;color:var(--muted);">H</th>'
+    +'<th style="padding:3px 4px;text-align:center;font-size:10px;color:var(--muted);">Par</th>';
+  nms.forEach(nm=>{
+    html+='<th colspan="2" style="padding:3px 4px;text-align:center;font-size:10px;color:var(--muted);border-left:1px solid var(--border);">'+nm+'</th>';
+  });
+  html+='</tr><tr style="border-bottom:1px solid var(--border);"><th></th><th></th>';
+  nms.forEach(()=>{
+    html+='<th style="padding:2px 4px;text-align:center;font-size:9px;color:var(--muted);border-left:1px solid var(--border);">Grs</th>'
+      +'<th style="padding:2px 4px;text-align:center;font-size:9px;color:var(--muted);">Net</th>';
+  });
+  html+='</tr>';
+
+  const gFront=Array(np()).fill(0), nFront=Array(np()).fill(0);
+  const gBack=Array(np()).fill(0), nBack=Array(np()).fill(0);
+  const gTot=Array(np()).fill(0), nTot=Array(np()).fill(0);
+  const fDone=Array(np()).fill(true), bDone=Array(np()).fill(true);
+
+  for(let h=1;h<=S.holes;h++){
+    const par=S.par[h-1];
+    html+='<tr style="border-bottom:1px solid var(--border);">'
+      +'<td style="padding:4px;color:var(--muted);font-size:11px;">'+h+'</td>'
+      +'<td style="padding:4px;text-align:center;color:var(--muted);">'+par+'</td>';
+    nms.forEach((_,i)=>{
+      const g=S.scores[h]?S.scores[h][i]:null;
+      const net=grossNet(i,h);
+      const gD=g===null||g===undefined?'—':(g==='X'?'<span style="color:var(--red)">X</span>':g);
+      const nD=net===null?'—':net.val+(net.x?'<sup style="color:var(--red);font-size:8px;">X</sup>':'');
+      html+='<td style="padding:4px;text-align:center;border-left:1px solid var(--border);">'+gD+'</td>'
+        +'<td style="padding:4px;text-align:center;color:var(--muted);">'+nD+'</td>';
+      if(g!==null&&g!==undefined&&g!==''){
+        const gV=(g==='X')?par+2:+g; const nV=net?net.val:0;
+        gTot[i]+=gV; nTot[i]+=nV;
+        if(h<=9){gFront[i]+=gV;nFront[i]+=nV;} else{gBack[i]+=gV;nBack[i]+=nV;}
+      } else { if(h<=9) fDone[i]=false; else bDone[i]=false; }
+    });
+    html+='</tr>';
+    if(h===9&&S.holes===18){
+      const fPar=S.par.slice(0,9).reduce((a,b)=>a+b,0);
+      html+='<tr style="border-top:2px solid var(--border-strong);border-bottom:2px solid var(--border-strong);background:#f5f3ee;font-weight:700;">'
+        +'<td style="padding:4px;font-size:11px;">OUT</td><td style="padding:4px;text-align:center;">'+fPar+'</td>';
+      nms.forEach((_,i)=>{ html+='<td style="padding:4px;text-align:center;border-left:1px solid var(--border);">'+(fDone[i]?gFront[i]:'—')+'</td><td style="padding:4px;text-align:center;">'+(fDone[i]?nFront[i]:'—')+'</td>'; });
+      html+='</tr>';
+    }
+  }
+  if(S.holes===18){
+    const bPar=S.par.slice(9).reduce((a,b)=>a+b,0);
+    html+='<tr style="border-top:2px solid var(--border-strong);background:#f5f3ee;font-weight:700;">'
+      +'<td style="padding:4px;font-size:11px;">IN</td><td style="padding:4px;text-align:center;">'+bPar+'</td>';
+    nms.forEach((_,i)=>{ html+='<td style="padding:4px;text-align:center;border-left:1px solid var(--border);">'+(bDone[i]?gBack[i]:'—')+'</td><td style="padding:4px;text-align:center;">'+(bDone[i]?nBack[i]:'—')+'</td>'; });
+    html+='</tr>';
+  }
+  const tPar=S.par.slice(0,S.holes).reduce((a,b)=>a+b,0);
+  html+='<tr style="border-top:2px solid var(--border-strong);font-weight:700;background:#eae8e2;">'
+    +'<td style="padding:4px;font-size:11px;">TOT</td><td style="padding:4px;text-align:center;">'+tPar+'</td>';
+  nms.forEach((_,i)=>{
+    const done=fDone[i]&&bDone[i];
+    html+='<td style="padding:4px;text-align:center;border-left:1px solid var(--border);">'+(done?gTot[i]:'—')+'</td><td style="padding:4px;text-align:center;">'+(done?nTot[i]:'—')+'</td>';
+  });
+  html+='</tr></table></div>';
+  card.innerHTML=html;
+  container.appendChild(card);
+}
+
+// ─── SAVE / RESTORE ──────────────────────────────────────────────────────────
+const SAVE_KEY='nassau_state_v1';
+const BACKUP_KEY='nassau_backups_v1';
+const MAX_BACKUPS=5;
+
+function saveState(){ try{ S._savedAt=Date.now(); localStorage.setItem(SAVE_KEY,JSON.stringify(S)); }catch(e){} }
+function autosave(){ saveState(); }
+
+function loadState(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY);
+    if(!raw) return false;
+    const saved=JSON.parse(raw);
+    if(!saved||!saved.started) return false;
+    Object.assign(S,saved); return true;
+  }catch(e){ return false; }
+}
+
+function clearSave(){ try{ localStorage.removeItem(SAVE_KEY); }catch(e){} }
+
+function backupCurrentRound(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY); if(!raw) return;
+    const saved=JSON.parse(raw); if(!saved||!saved.started) return;
+    const backups=getBackups(); backups.unshift(saved);
+    if(backups.length>MAX_BACKUPS) backups.length=MAX_BACKUPS;
+    localStorage.setItem(BACKUP_KEY,JSON.stringify(backups));
+  }catch(e){}
+}
+
+function getBackups(){ try{ return JSON.parse(localStorage.getItem(BACKUP_KEY))||[]; }catch(e){ return []; } }
+
+function restoreBackup(index){
+  const b=getBackups()[index]; if(!b) return;
+  Object.assign(S,b); saveState();
+  renderPInputs(); renderSiGrid();
+  document.getElementById('bet-val').value=S.betVal||5;
+  ['scores','nassau','summary'].forEach(t=>document.querySelector('[data-tab="'+t+'"]').disabled=false);
+  go('nassau');
+}
+
+function showBackupsModal(){
+  const backups=getBackups();
+  const overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  const modal=document.createElement('div');
+  modal.style.cssText='background:#fff;border-radius:12px;padding:18px;width:100%;max-width:380px;max-height:80vh;overflow-y:auto;';
+  modal.innerHTML='<p style="font-size:15px;font-weight:700;margin-bottom:12px;">Restore a previous round</p>';
+  if(!backups.length){ modal.innerHTML+='<p class="muted">No backups saved yet.</p>'; }
+  else{
+    backups.forEach((b,i)=>{
+      const dateStr=b._savedAt?new Date(b._savedAt).toLocaleString():'Unknown date';
+      const players=b.players?b.players.map(p=>p.name||'?').filter(n=>n&&n!=='?').join(', '):'';
+      const row=document.createElement('div');
+      row.style.cssText='border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;cursor:pointer;';
+      row.innerHTML='<p style="font-size:13px;font-weight:600;margin-bottom:2px;">'+dateStr+'</p><p style="font-size:12px;color:var(--muted);">'+players+'</p>';
+      row.onclick=()=>{ overlay.remove(); restoreBackup(i); };
+      modal.appendChild(row);
+    });
+  }
+  const closeBtn=document.createElement('button'); closeBtn.textContent='Cancel'; closeBtn.style.cssText='width:100%;margin-top:8px;';
+  closeBtn.onclick=()=>overlay.remove();
+  modal.appendChild(closeBtn); overlay.appendChild(modal);
+  overlay.onclick=e=>{ if(e.target===overlay) overlay.remove(); };
+  document.body.appendChild(overlay);
+}
+
+// On page load
+(function(){
+  if(loadState()){
+    renderPInputs(); renderSiGrid();
+    document.getElementById('bet-val').value=S.betVal||5;
+    ['scores','nassau','summary'].forEach(t=>document.querySelector('[data-tab="'+t+'"]').disabled=false);
+    const banner=document.createElement('div');
+    banner.style.cssText='background:var(--gold-bg);border:1px solid var(--gold);border-radius:8px;padding:11px 14px;margin-bottom:12px;';
+    const dateStr=S._savedAt?new Date(S._savedAt).toLocaleString():'';
+    banner.innerHTML='<p style="font-size:13px;color:var(--gold);font-weight:600;margin-bottom:8px;">⏱ Round in progress'+(dateStr?' · saved '+dateStr:'')+'</p>';
+    const btnRow=document.createElement('div'); btnRow.style.cssText='display:flex;gap:7px;flex-wrap:wrap;';
+    const resumeBtn=document.createElement('button');
+    resumeBtn.textContent='Resume'; resumeBtn.style.cssText='font-size:12px;padding:5px 11px;background:var(--gold-bg);color:var(--gold);border-color:var(--gold);font-weight:600;';
+    resumeBtn.onclick=()=>{ banner.remove(); go('nassau'); };
+    const newBtn=document.createElement('button');
+    newBtn.textContent='New round'; newBtn.style.cssText='font-size:12px;padding:5px 11px;';
+    newBtn.onclick=()=>{
+      const conf=document.createElement('div');
+      conf.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+      const box=document.createElement('div');
+      box.style.cssText='background:#fff;border-radius:12px;padding:20px;width:100%;max-width:320px;';
+      box.innerHTML='<p style="font-size:15px;font-weight:700;margin-bottom:6px;">Start a new round?</p><p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Your current round will be backed up and can be restored.</p>';
+      const bb=document.createElement('div'); bb.style.cssText='display:flex;gap:8px;';
+      const cancelBtn=document.createElement('button'); cancelBtn.textContent='Cancel'; cancelBtn.style.cssText='flex:1;'; cancelBtn.onclick=()=>conf.remove();
+      const confirmBtn=document.createElement('button'); confirmBtn.textContent='Start new round'; confirmBtn.style.cssText='flex:1;background:var(--red);color:#fff;border-color:var(--red);font-weight:600;';
+      confirmBtn.onclick=()=>{
+        conf.remove(); backupCurrentRound(); clearSave();
+        Object.assign(S,{ players:[{name:'',hcp:0},{name:'',hcp:0},{name:'',hcp:0},{name:'',hcp:0}], si:SI.slice(),par:PAR.slice(),holes:18,betVal:5,started:false,scores:{},nassau:{},_savedAt:null });
+        ['scores','nassau','summary'].forEach(t=>document.querySelector('[data-tab="'+t+'"]').disabled=true);
+        go('setup'); renderPInputs(); renderSiGrid(); banner.remove();
+      };
+      bb.appendChild(cancelBtn); bb.appendChild(confirmBtn); box.appendChild(bb);
+      conf.appendChild(box); conf.onclick=e=>{ if(e.target===conf) conf.remove(); };
+      document.body.appendChild(conf);
+    };
+    const restoreBtn=document.createElement('button'); restoreBtn.textContent='Restore old round'; restoreBtn.style.cssText='font-size:12px;padding:5px 11px;';
+    restoreBtn.onclick=()=>showBackupsModal();
+    btnRow.appendChild(resumeBtn); btnRow.appendChild(newBtn); btnRow.appendChild(restoreBtn);
+    banner.appendChild(btnRow);
+    document.querySelector('.wrap').insertBefore(banner, document.querySelector('.tabs').nextSibling);
+  } else {
+    const backups=getBackups();
+    if(backups.length){
+      const rb=document.createElement('div');
+      rb.style.cssText='background:#f5f3ee;border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;';
+      rb.innerHTML='<span class="muted">No active round.</span>';
+      const rbb=document.createElement('button'); rbb.textContent='Restore previous round'; rbb.style.cssText='font-size:12px;padding:5px 11px;';
+      rbb.onclick=()=>showBackupsModal(); rb.appendChild(rbb);
+      document.querySelector('.wrap').insertBefore(rb, document.querySelector('.tabs').nextSibling);
+    }
+  }
+})();
+</script>
+</body>
+</html>
