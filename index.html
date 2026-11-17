@@ -76,7 +76,7 @@ button:active{opacity:.8;}
 .pair-hdr{padding:10px 13px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);background:var(--surface);}
 .pair-name{font-size:14px;font-weight:700;}
 .pair-result{font-size:13px;font-weight:700;}
-.bet-row{display:flex;align-items:center;gap:6px;padding:7px 13px;border-bottom:1px solid var(--border);}
+.bet-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:7px 13px;border-bottom:1px solid var(--border);}
 .bet-row:last-child{border-bottom:none;}
 .bet-label{font-size:12px;font-weight:700;min-width:58px;color:var(--text);}
 .bet-status{flex:1;font-size:11px;color:var(--muted);}
@@ -297,12 +297,12 @@ document.getElementById('nassau-setup-toggle').onclick=()=>{
   const open=body.style.display!=='none';
   body.style.display=open?'none':'block';
   lbl.textContent='Set up '+(open?'▸':'▴');
-  if(!open) renderNassauSetup();
+  if(!open) renderNassauSetupInto(document.getElementById('nassau-setup-pairs'));
 };
 
-function renderNassauSetup(){
+function renderNassauSetupInto(container){
   if(!S.nassau) S.nassau={};
-  const nms=ns(), wrap=document.getElementById('nassau-setup-pairs');
+  const nms=ns(), wrap=container;
   const pairs=[];
   for(let a=0;a<np();a++) for(let b=a+1;b<np();b++) pairs.push([a,b]);
   pairs.forEach(([a,b])=>{ const key=a+'-'+b; if(!S.nassau[key]) S.nassau[key]={active:false,val:+(document.getElementById('bet-val').value)||5,presses:{}}; });
@@ -360,9 +360,23 @@ function renderNassauSetup(){
   });
 }
 
+function renderNassauSetup(){
+  const wrap=document.getElementById('nassau-setup-pairs');
+  if(wrap) renderNassauSetupInto(wrap);
+  // Also refresh tab setup body if open
+  const tabBody=document.getElementById('nassau-tab-setup-body');
+  if(tabBody&&tabBody.style.display!=='none') renderNassauSetupInto(tabBody);
+}
+
 document.getElementById('bet-val').oninput=e=>{ if(S.started){ S.betVal=+e.target.value||5; autosave(); } };
 
 document.getElementById('start-btn').onclick=()=>{
+  // Protect an in-progress round: confirm, then back it up before it is replaced
+  const hasScores=S.started&&S.scores&&Object.keys(S.scores).some(h=>S.scores[h]&&Object.keys(S.scores[h]).length);
+  if(hasScores){
+    if(!confirm('A round is already in progress. Start a new round? The current round will be backed up and can be restored.')) return;
+    backupCurrentRound();
+  }
   S.holes=+document.getElementById('hole-count').value;
   S.betVal=+document.getElementById('bet-val').value||5;
   S.started=true; S.scores={};
@@ -443,6 +457,23 @@ function renderNassau(){
   const wrap=document.getElementById('nassau-wrap');
   wrap.innerHTML='';
   const nms=ns();
+
+  // Collapsible setup section at top of Nassau tab
+  const setupCard=document.createElement('div'); setupCard.className='card'; setupCard.style.marginBottom='10px';
+  const setupHdr=document.createElement('p');
+  setupHdr.style.cssText='font-size:14px;font-weight:600;cursor:pointer;margin:0;display:flex;justify-content:space-between;align-items:center;';
+  setupHdr.innerHTML='<span>Match setup</span><span style="font-size:12px;font-weight:400;color:var(--muted);">▸</span>';
+  const setupBody=document.createElement('div');
+  setupBody.style.display='none'; setupBody.style.marginTop='10px';
+  setupBody.id='nassau-tab-setup-body';
+  setupHdr.onclick=()=>{
+    const open=setupBody.style.display!=='none';
+    setupBody.style.display=open?'none':'block';
+    setupHdr.querySelector('span:last-child').textContent=open?'▸':'▴';
+    if(!open) renderNassauSetupInto(setupBody);
+  };
+  setupCard.appendChild(setupHdr); setupCard.appendChild(setupBody);
+  wrap.appendChild(setupCard);
   const pairs=[];
   for(let a=0;a<np();a++) for(let b=a+1;b<np();b++) pairs.push([a,b]);
   const activePairs=pairs.filter(([a,b])=>S.nassau[a+'-'+b]&&S.nassau[a+'-'+b].active);
@@ -450,7 +481,7 @@ function renderNassau(){
 
   if(!activePairs.length){
     const p=document.createElement('p'); p.className='muted';
-    p.textContent='No active Nassau matches. Enable matches in Setup.';
+    p.textContent='No active Nassau matches. Tap "Match setup" above to enable matches.';
     wrap.appendChild(p); return;
   }
 
@@ -481,7 +512,7 @@ function renderNassau(){
       if(!cfg.presses[label]) cfg.presses[label]=[];
       const pressList=cfg.presses[label];
       const allBets=[{betLabel:label,start,end,isPress:false}];
-      pressList.forEach((p,pi)=>allBets.push({betLabel:'Press '+(pi+1),start:p.fromHole,end,isPress:true,pressIdx:pi}));
+      pressList.forEach((p,pi)=>allBets.push({betLabel:'Press '+(pi+1)+' (H'+p.fromHole+')',start:p.fromHole,end,isPress:true,pressIdx:pi}));
 
       allBets.forEach(({betLabel,start:bStart,end:bEnd,isPress,pressIdx})=>{
         const{aUp,bUp,scored}=matchResult(pA,pB,bStart,bEnd);
@@ -518,21 +549,29 @@ function renderNassau(){
 
         row.appendChild(lblEl); row.appendChild(statusEl); row.appendChild(resultEl);
 
-        // Press button — available once section has started and holes remain
-        if(!over && rem>0 && scored>0){
+        // Press controls — choose a starting hole (defaults to next unscored hole; earlier holes = retroactive)
+        if(rem>0 && scored>0 && bEnd>bStart){
           let lastScored=bStart;
           for(let h=bEnd;h>=bStart;h--){
             const nA=grossNet(pA,h), nB=grossNet(pB,h);
             if(nA&&nB){lastScored=h;break;}
           }
-          const nextHole=lastScored+1;
-          if(nextHole<=bEnd){
-            const pb=document.createElement('button');
-            pb.textContent='Press'; pb.className='btn-sm';
-            pb.style.cssText='background:var(--gold-bg);color:var(--gold);border-color:var(--gold);font-weight:700;font-size:11px;padding:3px 8px;';
-            pb.onclick=()=>{ cfg.presses[label].push({fromHole:nextHole}); autosave(); renderNassau(); if(document.getElementById('panel-summary').classList.contains('on')) renderSummary(); };
-            row.appendChild(pb);
+          const defHole=Math.min(lastScored+1,bEnd);
+          const fromSel=document.createElement('select');
+          fromSel.style.cssText='width:auto;font-size:11px;padding:2px 3px;';
+          fromSel.title='Press starts at this hole';
+          for(let h=bStart+1;h<=bEnd;h++){
+            const o=document.createElement('option');
+            o.value=h; o.textContent='H'+h;
+            if(h===defHole) o.selected=true;
+            fromSel.appendChild(o);
           }
+          const pb=document.createElement('button');
+          pb.textContent='Press from'; pb.className='btn-sm';
+          pb.style.cssText='background:var(--gold-bg);color:var(--gold);border-color:var(--gold);font-weight:700;font-size:11px;padding:3px 8px;';
+          pb.onclick=()=>{ cfg.presses[label].push({fromHole:+fromSel.value}); autosave(); renderNassau(); if(document.getElementById('panel-summary').classList.contains('on')) renderSummary(); };
+          row.appendChild(pb);
+          row.appendChild(fromSel);
         }
 
         // Remove press button
